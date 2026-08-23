@@ -149,6 +149,8 @@ Der Mean Rank gibt die durchschnittliche Position des korrekten Chunks in der Er
 
 $\displaystyle \mathrm{Recall@}k=\frac{1}{|Q|}\sum_{i=1}^{|Q|}\mathbb{1}(r_i\leq k)$
 
+Die Indikatorfunktion $\mathbb{1}(r_i\leq k)$ nimmt den Wert 1 an, wenn der korrekte Chunk unter den ersten $k$ Treffern liegt, andernfalls 0. Da jede Frage genau einem Zielchunk zugeordnet ist, entspricht Recall@k hier dem Anteil der Fragen, für die dieser Zielchunk in den Top-$k$ gefunden wird. Ein höherer Wert ist besser.
+
 ### Ergebnisse
 
 ![advanced_retrieval_comparison](src/advanced_retrieval_comparison.png)
