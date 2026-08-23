@@ -118,14 +118,14 @@ zerlegt. Überschriften strukturieren die Quelle, werden aber nicht Bestandteil
 der Textchunks. Für jeden Chunk wurden manuell 20 unterschiedliche Nutzerfragen
 formuliert. Die Aufteilung erfolgte gruppiert nach Zielchunks:
 
-| Split | Chunks |
-|---|---:|
-| Training | 30 |
-| Tuning | 8 |
-| Validierung | 10 |
+| Split | Chunks | Fragen |
+|---|---|---:|
+| Training | 30 | 600 |
+| Validation | 8 | 160 |
+| Test | 10 | 200 |
 
 Fragen desselben Chunks gelangen dadurch nicht gleichzeitig in Training und
-finale Evaluation. Externe Paper-Chunks dienen ausschließlich als
+finale Test. Externe Paper-Chunks dienen ausschließlich als
 Trainingsnegative; sie werden weder durchsucht noch evaluiert.
 
 Verglichen wurden drei Embedding-Modelle sowie Dense Retrieval, ein linearer
@@ -149,7 +149,7 @@ Der Mean Rank gibt die durchschnittliche Position des korrekten Chunks in der Er
 
 $\displaystyle \mathrm{Recall@}k=\frac{1}{|Q|}\sum_{i=1}^{|Q|}\mathbb{1}(r_i\leq k)$
 
-Die Indikatorfunktion $\mathbb{1}(r_i\leq k)$ nimmt den Wert 1 an, wenn der korrekte Chunk unter den ersten $k$ Treffern liegt, andernfalls 0. Da jede Frage genau einem Zielchunk zugeordnet ist, entspricht Recall@k hier dem Anteil der Fragen, für die dieser Zielchunk in den Top-$k$ gefunden wird. Ein höherer Wert ist besser.
+Die Indikatorfunktion $\mathbb{1}(r_i\leq k)$ nimmt den Wert 1 an, wenn der korrekte Chunk unter den ersten $k$ Treffern liegt, andernfalls 0. Da jede Frage genau einem Zielchunk zugeordnet ist, entspricht Recall@k hier dem Anteil der Fragen, für die dieser Zielchunk in den Top-k gefunden wird. Ein höherer Wert ist besser.
 
 ### Ergebnisse
 
@@ -166,13 +166,14 @@ Die Indikatorfunktion $\mathbb{1}(r_i\leq k)$ nimmt den Wert 1 an, wenn der korr
 | Metadaten-Retrieval | 0,5749 | 4,900 | 0,425 | 0,765 | 0,835 |
 
 `BAAI/bge-m3` erzielte im Modellvergleich die besten Tuning-Ergebnisse. Das
-unveränderte Base-Modell erreicht auf der strikt getrennten Validierung einen
+unveränderte Base-Modell erreicht auf der strikt getrenntem Test einen
 Recall@5 von 86,5 % und einen Recall@8 von 91,5 %. Die zusätzlichen drei
 Treffer erhöhen die Abdeckung damit um 5,0 Prozentpunkte; deshalb verwendet der
 Betrieb bewusst `k = 8`.
 
 Adapter und partielles Fine-Tuning liefern keinen belastbaren
-Validierungsvorteil. Hybrid + Reranker verbessert die MRR lediglich von 0,6444
+Validierungsvorteil. Dies ist im Hinlbick auf die mit 600 Fragen geringe Trainingsmenge nicht verwunderlich.
+Hybrid + Reranker verbessert die MRR lediglich von 0,6444
 auf 0,6453 und den Recall@1 von 49,5 % auf 52,5 %, senkt aber Recall@5 und
 Recall@8. Gleichzeitig steigt die lokal gemessene CPU-Latenz pro Frage von
 30,6 ms auf 1161,8 ms. Modellladezeit und Indexaufbau sind in diesen Werten
@@ -326,16 +327,9 @@ in den Modell-Rollouts. Der native Cache berücksichtigt neben der Spielnummer
 eine Signatur der freigegebenen Konfigurationsdaten und wird bei neuen
 Crawlerdaten oder einem Periodenwechsel zuverlässig invalidiert.
 
-Report9-Dateien gehören nicht mehr zum produktiven Analysepfad. Ein späterer
-Crawler darf sie als Quelle verwenden, muss pro Spiel und abgeschlossener
-Periode genau einen vollständigen U1-Datensatz mit allen 20 Feldern validieren
-und idempotent über `PlanZeroDatabase.upsert_period_decision(...)` schreiben.
-Die globalen Gegnerszenarien werden nicht durch diesen periodischen Crawler
-verändert.
-
 ## Analyseumfang und Rollenmodell
 
-Das Tool kennt acht Fragekategorien:
+Das Tool kennt acht Fragekategorien, welche als vorgeschlagene Prompts in OpenWebUI hinterlegt sind:
 
 1. Vergangenheitsanalyse
 2. Bedingte Zukunfts-Rollouts
@@ -351,7 +345,7 @@ aber nicht die Berechnung. Normale Nutzer erhalten immer die gemeinsame,
 nicht präskriptive Summary aller sieben Bereiche. Nur die für Admins
 freigegebene Frage 8 setzt serverseitig `include_action_values=True` und ergänzt
 konkrete aktuelle und spätere Werte. Dieser Schalter ist kein Toolparameter und
-kann nicht durch einen Prompt aktiviert werden.
+kann nicht durch Promptinjection aktiviert werden.
 
 Standardmäßig berechnet PlanZero in P1 bis P5 128 bedingte Fortsetzungen. In P6
 gibt es keine spätere U1-Entscheidungsperiode mehr; die Fortsetzung ist daher
@@ -434,10 +428,8 @@ Evaluation auf 609,74 Punkte beziehungsweise Rang 11,62 zurückging. Der Loss
 fiel dennoch von 2,7483 auf 0,2546. Das spricht für eine späte Spezialisierung
 auf die Trainingssuche und gegen die Annahme, dass der niedrigste Loss
 automatisch den besten generalisierenden Checkpoint liefert. Die feste
-Evaluation verwendete wiederholt denselben Seed und nur 128 Partien; außerdem
-wurde der Autosave rollierend überschrieben. Der starke Zwischencheckpoint aus
-Iteration 3.200 liegt daher nicht separat vor. Ein formaler Superhuman-Nachweis
-auf unabhängigen Seeds steht weiterhin aus.
+Evaluation verwendete wiederholt denselben Seed und nur 128 Partien. Ein formaler Superhuman-Nachweis
+auf unabhängigen Seeds steht noch aus.
 
 ## Policy-Value- und Simulationsarchitektur
 
@@ -490,9 +482,8 @@ Bilanz, Periodenergebnis und Erfolgswert.
 
 ## Ghost Population und Reward
 
-Die Bewertungsmatrix aus `Planspiel_EBWL_Bewertung_Template.xlsx` wird beim
-Erzeugen der Reward-Klasse einmal gelesen. Im laufenden Training und in den
-Rollouts finden keine weiteren Excel-Zugriffe statt.
+Die offizielle Bewertungsmatrix wird beim
+Erzeugen der Reward-Klasse dabei einmalig eingelesen.
 
 Die feste Ghost Population bewertet Pläne über sieben Kennzahlen:
 
@@ -546,7 +537,7 @@ Erfolgswertreports sind keine Simulationsinputs.
   Liquidität und Eigenkapital werden periodisch fortgeschrieben.
 - **Getrennte Rollen:** Studierende erhalten Analyse und Zielkonflikte, aber
   keine konkreten nächsten Entscheidungswerte.
-- **Methodische Vorsicht:** Gegenfakten sind innerhalb des rekonstruierten
+- **Vorsicht:** Gegenfakten sind innerhalb des rekonstruierten
   Weltmodells kausal kontrolliert, aber kein Kausalitätsbeweis außerhalb des
   Planspiels. Insolvenzindikatoren sind einfach Planspiel-Proxys.
 
@@ -557,7 +548,7 @@ weder Rolle noch Spielnummer, Unternehmen oder Adminwerte als Bodyparameter
 setzen. SQL-Zugriffe sind parametrisiert und die 20 Entscheidungsfelder werden
 gegen eine feste kanonische Liste validiert.
 
-Die aktuelle Dienst-zu-Dienst-Absicherung ist durch die Firewall geschützt und nur im Subnetz erreichbar.
+Dienste sind durch die Firewall geschützt und nur im Subnetz erreichbar.
 
 Langfuse zeichnet zwei getrennte Ebenen auf: den Open-WebUI-Chatturn und die
 direkte PlanZero-Analyse. Tiefenspans erfassen nur kuratierte technische
@@ -593,8 +584,6 @@ fail-open und darf die fachliche Analyse nicht blockieren.
 ├── README.md
 ```
 
-Wichtige Verantwortlichkeiten:
-
 - `PlanZero_Tool.py`: Analyseengine, Modellinferenz, Rollouts, Sensitivitäten,
   Gegenfakten und Simulatororchestrierung.
 - `planzero_training.py`: Aktionsräume, Encoder, Netz-, Replay- und
@@ -613,8 +602,8 @@ Wichtige Verantwortlichkeiten:
 
 Die produktive Serverumgebung ist Python 3.12 auf ARM64. Linux Ubuntu 24.04 Server Edition.
 Sie verwendet bewusst CPU-PyTorch aus dem offiziellen PyTorch-CPU-Index; CUDA-Pakete sind auf diesem
-Host nicht erforderlich. Training und historische Benchmarks fanden dagegen
-auf einer CUDA-Workstation statt.
+Host nicht erforderlich. Training und historische Benchmarks wurden dagegen mit
+einer CUDA GPU umgesetzt.
 
 ## Einordnung
 
