@@ -42,7 +42,7 @@ aber keine Quelle für benutzerbezogene Spielstände oder PlanZero-Berechnungen.
 | Open-WebUI-RAG-Retrieval | evaluiert; `BAAI/bge-m3`, Dense Retrieval und Top-8 ausgewählt |
 | Serverseitige, nicht präskriptive BWL-Summary | implementiert |
 | Datensparsame Langfuse-Instrumentierung | implementiert, fail-open |
-| Automatischer TOPSIM-Crawler | Datenvertrag definiert, noch separat umzusetzen |
+| Automatischer Crawler | Datenvertrag definiert, noch separat umzusetzen |
 | Unabhängiger Superhuman-Arena-Nachweis | noch ausstehend |
 
 Die Simulation selbst verwendet **kein Machine Learning**. Markt, Produktion,
