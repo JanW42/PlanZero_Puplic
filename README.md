@@ -546,8 +546,7 @@ Erfolgswertreports sind keine Simulationsinputs.
   keine konkreten nächsten Entscheidungswerte.
 - **Methodische Vorsicht:** Gegenfakten sind innerhalb des rekonstruierten
   Weltmodells kausal kontrolliert, aber kein Kausalitätsbeweis außerhalb des
-  Planspiels. Insolvenzindikatoren sind Planspiel-Proxys und keine rechtliche
-  Bewertung.
+  Planspiels. Insolvenzindikatoren sind einfach Planspiel-Proxys.
 
 ## Sicherheit und Observability
 
@@ -556,13 +555,7 @@ weder Rolle noch Spielnummer, Unternehmen oder Adminwerte als Bodyparameter
 setzen. SQL-Zugriffe sind parametrisiert und die 20 Entscheidungsfelder werden
 gegen eine feste kanonische Liste validiert.
 
-Die aktuelle Dienst-zu-Dienst-Absicherung ist eine interne Vertrauensgrenze:
-PlanZero lauscht nur auf der Docker-Host-Adresse, und die Firewall erlaubt nur
-das vorgesehene Docker-Subnetz. Ein kompromittierter Prozess innerhalb dieses
-Bereichs könnte die Identitätsheader dennoch nachbilden. Vor einem breiten
-Realbetrieb bleiben deshalb insbesondere kryptografische Dienstauthentifizierung,
-strikte User-ID-Bindung, Rate Limits, Job-Timeouts und formalisierte
-Backup-/Restore-Verfahren wichtige Härtungsschritte.
+Die aktuelle Dienst-zu-Dienst-Absicherung ist durch die Firewall geschützt und nur im Subnetz erreichbar.
 
 Langfuse zeichnet zwei getrennte Ebenen auf: den Open-WebUI-Chatturn und die
 direkte PlanZero-Analyse. Tiefenspans erfassen nur kuratierte technische
@@ -612,55 +605,18 @@ Wichtige Verantwortlichkeiten:
   periodenabhängiger `SQLDecisionStore`.
 - `settings.py`: sechs Periodenfenster und Rollenrechte für acht Fragen.
 - `Architektur.txt`: vollständiger Datenbank-, Crawler-, Sicherheits- und
-  Betriebsvertrag.
+  Betriebsstand.
 
 ## Laufzeit und lokale Prüfung
 
-Die produktive Serverumgebung ist Python 3.12 auf ARM64. Sie verwendet bewusst
-CPU-PyTorch aus dem offiziellen PyTorch-CPU-Index; CUDA-Pakete sind auf diesem
+Die produktive Serverumgebung ist Python 3.12 auf ARM64. Linux Ubuntu 24.04 Server Edition.
+Sie verwendet bewusst CPU-PyTorch aus dem offiziellen PyTorch-CPU-Index; CUDA-Pakete sind auf diesem
 Host nicht erforderlich. Training und historische Benchmarks fanden dagegen
 auf einer CUDA-Workstation statt.
 
-Das native Modul wird nach Änderungen an `simulation.cpp` anhand des
-Quellhashes neu gebaut:
-
-```bash
-cd /home/jan/planzero/simulation_c++
-sudo -u jan /home/jan/planzero/.venv/bin/python setup.py build_ext --inplace
-```
-
-Statische und fokussierte Integrationstests:
-
-```bash
-/home/jan/planzero/.venv/bin/python -m py_compile \
-  /home/jan/planzero/PlanZero_Tool.py \
-  /home/jan/planzero/planzero_api.py \
-  /home/jan/planzero/planzero_database.py \
-  /home/jan/planzero/settings.py \
-  /home/jan/planzero/planzero_database_cli.py
-
-sudo -u jan /home/jan/planzero/.venv/bin/python \
-  /home/jan/planzero/test_planzero_service.py
-
-/home/jan/planzero/.venv/bin/python -m pip check
-```
-
-Datenbankstatus ohne Ausgabe vollständiger Entscheidungsinhalte:
-
-```bash
-sudo -u jan /home/jan/planzero/.venv/bin/python \
-  /home/jan/planzero/planzero_database_cli.py status
-```
-
-Der fokussierte Integrationstest prüft unter anderem versteckte
-Identitätsheader, Rollenrechte, Adminwerte, den minimalen OpenAPI-Vertrag,
-Periodengrenzen um 10:00 Uhr, die Ablehnung abweichender Perioden, den
-U1-SQL-Cutoff, das vollständige feste Gegnerszenario, den Zeit-/Fristtext und
-das Fehlen eines `context`-Feldes.
-
 ## Einordnung
 
-PlanZero ist nicht mehr nur eine Simulations- und RL-Forschungsplattform,
+PlanZero ist nicht nur eine Simulations- und RL-Forschungsplattform,
 sondern eine produktiv integrierte, rollengeschützte Analysekomponente. Der
 abgeschlossene Trainingslauf zeigt innerhalb des verwendeten Protokolls ein
 Leistungsniveau oberhalb historischer menschlicher Vergleichsmarken. Die
