@@ -598,7 +598,7 @@ fail-open und darf die fachliche Analyse nicht blockieren.
 - `Architektur.txt`: vollständiger Datenbank-, Crawler-, Sicherheits- und
   Betriebsstand.
 
-## Laufzeit und lokale Prüfung
+## Laufzeit
 
 Die produktive Serverumgebung ist Python 3.12 auf ARM64. Linux Ubuntu 24.04 Server Edition.
 Sie verwendet bewusst CPU-PyTorch aus dem offiziellen PyTorch-CPU-Index; CUDA-Pakete sind auf diesem
