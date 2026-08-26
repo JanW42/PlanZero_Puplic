@@ -1,7 +1,6 @@
 # PlanZero
 
-**Model-based Reinforcement Learning und rollengeschützte Betriebswirtschaftliche-Analysen für ein
-sechsperiodiges Unternehmensplanspiel**
+**verteiltes AlphaZero-System für sechsperiodige Business-Simulationen in C++ und PyTorch (Reinforcement Learning)**
 
 > **Forschungsfrage:** Wie lässt sich eine rekonstruierte, deterministische
 > Unternehmenssimulation mit AlphaZero-artiger Policy-Value-Planung und
