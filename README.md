@@ -5,7 +5,7 @@
 > **Forschungsfrage:** Wie lässt sich eine rekonstruierte, deterministische
 > Unternehmenssimulation mit AlphaZero-artiger Policy-Value-Planung und
 > erklärbarer KI verbinden, ohne die Eigenständigkeit studentischer
-> Entscheidungen aufzuheben?
+> Entscheidungen aufzuheben? (gelöst) Wie interagieren Studenten mit einer Superhuman-KI? Wie verändern sich die Noten? Wie robust ist das System gegen irrationale menschliche Entscheidungen?
 
 
 PlanZero verbindet ein explizites, reportfreies Weltmodell mit einem trainierten
