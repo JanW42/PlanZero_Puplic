@@ -44,8 +44,8 @@ aber keine Quelle für benutzerbezogene Spielstände oder PlanZero-Berechnungen.
 | Automatischer Crawler | Datenvertrag definiert, noch separat umzusetzen |
 | Unabhängiger Superhuman-Arena-Nachweis | noch ausstehend |
 
-Die Simulation selbst verwendet **kein Machine Learning**. Markt, Produktion,
-Kosten, Liquidität, Bilanz und Erfolgswert entstehen aus rekonstruierten
+Die Simulation selbst verwendet **kein Machine Learning**. Markt-, Betriebs-,
+Finanz- und aggregierte Zielgrößen entstehen aus rekonstruierten
 Wirkungskurven, festen Szenarioregeln und chronologischen Zustandsübergängen.
 Deep Learning kommt bei Policy, Value-Schätzung und der Erzeugung von
 U1-Strategiefortsetzungen zum Einsatz.
@@ -185,8 +185,8 @@ Latenz noch die höhere Komplexität.
    E-Mail-Adresse und Rolle in vier für das Modell unsichtbaren Headern.
 2. `planzero_api.py` prüft Rolle und Frageberechtigung. Fehlender Kontext führt
    zu `401`, eine gesperrte Frage zu `403` und ein fehlendes Mapping zu `404`.
-3. `user_game_mapping` ordnet den Nutzer serverseitig einer sechsstelligen
-   Spielnummer und `Unternehmen_1` zu.
+3. `user_game_mapping` ordnet den Nutzer serverseitig einer pseudonymisierten
+   Szenario- und Teilnehmerinstanz zu.
 4. `settings.py` bestimmt anhand der Serverzeit in `Europe/Berlin` die aktive
    Periode N und deren Abgabefrist. Eine abweichend angeforderte Periode wird
    mit `422` abgelehnt.
@@ -415,10 +415,10 @@ Workern und einer NVIDIA GeForce RTX 4070 Ti vollständig abgeschlossen.
 
 Das Modell lernte zunächst schnell, verbesserte sich nach einer längeren
 Plateauphase ab etwa Iteration 2.600 erneut und erreichte seine stärkste feste
-Evaluation in Iteration 3.200: einen mittleren Erfolgswert von **668,62** und
+Evaluation in Iteration 3.200: einen mittleren Simulationsscore von **668,62** und
 einen mittleren Rang von **4,01**. Die Ghost Population umfasst 107 vollständig
 bewertete Spielergebnisse von Studierenden aus dem Sommersemester 2026. Die
-historischen Vergleichsmarken liegen bei einem Erfolgswert von 630,54 und einem
+historischen Vergleichsmarken liegen bei einem Simulationsscore von 630,54 und einem
 Rang von 14,57 (kleiner ist besser). Der beste einzelne Plan des Laufs erreichte
 706,07; der höchste Self-Play-Mittelwert lag bei 665,78.
 
@@ -476,8 +476,8 @@ Entscheidungsdimensionen.
 Der Simulator verarbeitet unter anderem Preis, Werbung, Vertrieb, Qualität,
 Produktion, Einsatzstoffe, Personal, Investitionen, Finanzierung, Lager,
 Liquidität und Bilanz. Ein Lauf umfasst chronologisch Marktreaktionen,
-Lieferfähigkeit, Nachfrageumverteilung, Produktion, Kostenrechnung, Liquidität,
-Bilanz, Periodenergebnis und Erfolgswert.
+Lieferfähigkeit, Nachfrageumverteilung, betriebliche Abrechnung, Finanzierung
+und die Bildung aggregierter Zielkennzahlen.
 
 ## Ghost Population und Reward
 
@@ -486,13 +486,13 @@ Erzeugen der Reward-Klasse dabei einmalig eingelesen.
 
 Die feste Ghost Population bewertet Pläne über sieben Kennzahlen:
 
-1. kumulierter Periodenüberschuss,
-2. Erfolgswert,
-3. Eigenkapitalquote,
-4. Umsatz,
-5. Kassenendbestand,
-6. Abweichung der Mitarbeiterauslastung,
-7. Abweichung der Anlagenauslastung.
+1. kumulierte finanzielle Leistungsgröße,
+2. multidimensionaler Simulationsscore,
+3. Kapitalstabilität,
+4. aggregierte Marktleistung,
+5. Liquiditätsreserve,
+6. Abweichung der Personalauslastung vom Zielbereich,
+7. Abweichung der Kapazitätsauslastung vom Zielbereich.
 
 Die historischen Quintilsgrenzen erzeugen die diskreten Klassen
 `100 | 75 | 50 | 25 | 0`. Der zusätzliche Rang-Value liefert innerhalb einer
@@ -501,26 +501,137 @@ verändern.
 
 ## Simulatorvalidierung
 
-Die Python- und C++-Implementierungen wurden chronologisch über alle 108
-historischen Spiele geprüft. Die C++-Portierung reproduziert die reportfreie
+Die Ende-zu-Ende-Validierung umfasst 280 historische Simulationsverläufe aus
+zwei getrennten Datenbeständen. Für eine feste Teilnehmerinstanz werden die
+Perioden P1 bis P6 jeweils in ihrer tatsächlichen zeitlichen Reihenfolge
+simuliert. Damit gehen auch periodische Folgezustände in die Bewertung ein.
+Insgesamt wurden 1.680 Simulationsfälle erfolgreich und ohne Fehlschlag
+ausgeführt. P0 ist ein fester Anfangszustand und wird deshalb nicht als
+Zielwert bewertet.
+
+### Methodische Einordnung der Validierung
+
+Ziel dieser Auswertung ist nicht, eine Generalisierung auf andere
+Simulationssysteme nachzuweisen. Geprüft wird vielmehr, wie genau der
+deterministische Simulator die beobachteten Ergebnisse innerhalb seines
+vorgesehenen Einsatzbereichs reproduziert. Die 1.680 historischen Datenpunkte
+wurden nicht für den Bau des Simulationscodes verwendet, sondern dienen nach
+dessen Fertigstellung als unabhängige Referenzfälle zur Prüfung der
+Passgenauigkeit.
+
+Dazu werden die historischen Entscheidungen chronologisch erneut durch den
+Simulator gespielt und die selbst berechneten Zielwerte anschließend mit den
+zugehörigen Referenzwerten verglichen. Diese Referenzwerte sind reine
+Evaluationsziele und keine Simulationsinputs. Methodisch ist dies ein
+**historischer Replay-Test** beziehungsweise eine **Validierung der
+Rekonstruktionsgüte** auf zuvor nicht zur Implementierung verwendeten
+Beobachtungen.
+
+Dabei bezeichnet $y_i$ den historischen Referenzwert, $\hat{y}_i$ den vom
+Simulator berechneten Wert und $e_i=\hat{y}_i-y_i$ den Fehler des Falls $i$.
+Die Anzahl aller bewerteten Fälle ist $N$.
+
+### Mean Absolute Error
+
+$\displaystyle \mathrm{MAE}=\frac{1}{N}\sum_{i=1}^{N}\left|e_i\right|=\frac{1}{N}\sum_{i=1}^{N}\left|\hat{y}_i-y_i\right|$
+
+Der MAE ist die mittlere absolute Abweichung zwischen Simulation und Referenz.
+Ein kleinerer Wert ist besser; das Optimum liegt bei 0.
+
+### Root Mean Squared Error
+
+$\displaystyle \mathrm{RMSE}=\sqrt{\frac{1}{N}\sum_{i=1}^{N}e_i^2}=\sqrt{\frac{1}{N}\sum_{i=1}^{N}\left(\hat{y}_i-y_i\right)^2}$
+
+Der RMSE gewichtet große Abweichungen durch das Quadrieren stärker als der MAE
+und macht dadurch den Einfluss einzelner Ausreißer sichtbar. Ein kleinerer Wert
+ist besser; das Optimum liegt bei 0.
+
+### Maximum Absolute Error
+
+$\displaystyle \mathrm{MaxAbs}=\max_{1\leq i\leq N}\left|e_i\right|=\max_{1\leq i\leq N}\left|\hat{y}_i-y_i\right|$
+
+MaxAbs ist die größte beobachtete absolute Abweichung und beschreibt damit den
+Worst Case der untersuchten Simulationsfälle. Ein kleinerer Wert ist besser;
+das Optimum liegt bei 0.
+
+### Bias
+
+$\displaystyle \mathrm{Bias}=\frac{1}{N}\sum_{i=1}^{N}e_i=\frac{1}{N}\sum_{i=1}^{N}\left(\hat{y}_i-y_i\right)$
+
+Der Bias ist der mittlere vorzeichenbehaftete Fehler. Negative Werte stehen für
+eine durchschnittliche Unter-, positive Werte für eine Überschätzung. Ideal
+ist ein Wert von 0.
+
+### Ergebnisqualität gegenüber den historischen Referenzdaten
+
+| Zeitraum | N | Ø Referenzscore | MAE | RMSE | MaxAbs | Bias |
+|---|---:|---:|---:|---:|---:|---:|
+| **Gesamt (P1–P6)** | **1.680** | **311,67** | **0,1481** | **0,7760** | **9,2057** | **−0,0663** |
+| P1 | 280 | 286,34 | 0,0980 | 0,1569 | 0,6018 | −0,0826 |
+| P2 | 280 | 275,71 | 0,0740 | 0,4700 | 7,7780 | −0,0029 |
+| P3 | 280 | 311,32 | 0,1336 | 0,8426 | 8,4158 | −0,0199 |
+| P4 | 280 | 329,86 | 0,1843 | 0,8449 | 8,3513 | −0,1096 |
+| P5 | 280 | 337,00 | 0,1891 | 0,9264 | 8,6411 | −0,1224 |
+| P6 | 280 | 329,77 | 0,2098 | 1,0421 | 9,2057 | −0,0602 |
+
+Zur Einordnung der Fehlergrößen beginnt die aggregierte Zielkennzahl im
+gemeinsamen Ausgangszustand bei **288,78 Punkten**; der höchste im Projekt
+beobachtete Wert beträgt **706,14 Punkte**. Der mittlere Referenzscore der 1.680
+Validierungsfälle liegt bei **311,67 Punkten**. Bezogen auf diesen Mittelwert
+entsprechen der Gesamt-MAE von 0,1481 rund **0,05 %** und der RMSE von 0,7760
+rund **0,25 %**. Dass der RMSE deutlich über dem MAE liegt, ist auf wenige große
+Ausreißer zurückzuführen; der typische Fehler ist daher wesentlich kleiner als
+der Worst Case.
+
+Die historischen Referenzwerte werden getrennt eingelesen und nicht an die
+reportfrei ausgeführte Simulation übergeben. Dadurch misst die Auswertung die
+Reproduktionsqualität des Simulators und keine versehentliche Übernahme
+historischer Zielwerte.
+
+### Technische Übereinstimmung von Python und C++
+
+Zusätzlich reproduziert die C++-/pybind11-Portierung die reportfreie
 Python-Logik nahezu numerisch:
 
-| Größe | MaxAbs C++ gegenüber Python |
+| Ausgabekategorie | MaxAbs C++ gegenüber Python |
 |---|---:|
-| Erfolgswert | 0,0110 |
-| Periodenüberschuss | 0,0356 T€ |
-| Umsatz | < 2 × 10⁻¹² T€ |
-| potenzieller Absatz Online | 0 |
-| potenzieller Absatz Einzelhandel | 0 |
-| tatsächlicher Absatz | < 8 × 10⁻¹² Stück |
-
-Die historische Ende-zu-Ende-Validierung liest den tatsächlichen Erfolgswert
-erst nach Abschluss der eigenen Berechnung. Markt-, Kosten- oder
-Erfolgswertreports sind keine Simulationsinputs.
+| aggregierte Zielkennzahl | 0,0110 |
+| finanzielle Ergebnisgröße | 0,0356 |
+| monetäre Gesamtgröße | < 2 × 10⁻¹² |
+| Nachfragepotenzial Kanal A | 0 |
+| Nachfragepotenzial Kanal B | 0 |
+| realisierte Menge | < 8 × 10⁻¹² |
 
 ![Generalisierungsanalyse für Python und C++](src/analyse_simulator_generalisierung.png)
 
 ![Laufzeitverteilung von Python und C++](src/analyse_simulator_laufzeit.png)
+
+### Bedeutung der C++-Portierung für Reinforcement Learning
+
+Die C++-Portierung ist für das Reinforcement Learning entscheidend, weil
+Self-Play und Planung sehr viele vollständige Simulationsläufe benötigen. Die
+Python-/PyTorch-Seite erzeugt mit Policy-Netz und Suche die zu prüfenden
+Entscheidungen und übergibt sie gebündelt über `pybind11` an den nativen
+C++-Simulator. Dieser bildet das **Environment**, berechnet die chronologischen
+Zustandsübergänge und gibt die Ergebnisse zur Bewertung und zum weiteren
+Training an Python zurück.
+
+Im Self-Play wählt die Policy Entscheidungen; das Environment erzeugt daraus
+Zustände und vollständige Spielverläufe. Deren abschließende Bewertung
+gegenüber einer festen historischen Vergleichspopulation liefert das
+tatsächliche Lernsignal für die Value-Heads. Mit einer verbesserten Policy
+entstehen stärkere Suchkandidaten; eine genauere Value-Schätzung verbessert
+wiederum deren Auswahl. Die dabei erzeugten Self-Play-Daten fließen zurück in
+das Training, sodass sich Policy und Value iterativ gegenseitig verstärken.
+
+Im identischen Validierungsschema sank die mittlere Rundenzeit von **165,858
+ms** in Python auf **0,128 ms** in C++ – eine Beschleunigung um rund den
+**Faktor 1.296**. Der abgeschlossene Trainingslauf dauerte mit dem C++-Backend
+**901,9 Minuten**, also etwa **15 Stunden und 2 Minuten**. Linear mit dem
+gemessenen Laufzeitfaktor hochgerechnet hätte derselbe Lauf mit dem
+Python-Simulator theoretisch rund **811,6 Tage** beziehungsweise **2,22 Jahre**
+benötigt. Diese Hochrechnung ist eine Größenordnung, aber keine tatsächlich
+gemessene Python-Trainingsdauer.
 
 ## Didaktische und methodische Leitplanken
 
@@ -532,8 +643,8 @@ Erfolgswertreports sind keine Simulationsinputs.
   entstehen im Weltmodell.
 - **Keine ML-Näherung im Simulator:** Das Weltmodell besteht aus expliziten
   Regeln und Wirkungskurven.
-- **Chronologische Zustände:** Lager, Bekanntheit, Personal, Maschinen,
-  Liquidität und Eigenkapital werden periodisch fortgeschrieben.
+- **Chronologische Zustände:** Bestände, Markt-, Personal-, Kapazitäts- und
+  Finanzzustände werden periodisch fortgeschrieben.
 - **Getrennte Rollen:** Studierende erhalten Analyse und Zielkonflikte, aber
   keine konkreten nächsten Entscheidungswerte.
 - **Vorsicht:** Gegenfakten sind innerhalb des rekonstruierten
@@ -573,7 +684,6 @@ fail-open und darf die fachliche Analyse nicht blockieren.
 ├── planzero_observability.py
 ├── planzero_database.py
 ├── planzero_database_cli.py
-├── Planspiel_EBWL_Bewertung_Template.xlsx
 ├── data/
 │   └── planzero.sqlite3
 ├── settings.py
