@@ -418,9 +418,9 @@ Plateauphase ab etwa Iteration 2.600 erneut und erreichte seine stärkste feste
 Evaluation in Iteration 3.200: einen mittleren Simulationsscore von **668,62** und
 einen mittleren Rang von **4,01**. Die Ghost Population umfasst 107 vollständig
 bewertete Spielergebnisse von Studierenden aus dem Sommersemester 2026. Die
-historischen Vergleichsmarken liegen bei einem Simulationsscore von 630,54 und einem
-Rang von 14,57 (kleiner ist besser). Der beste einzelne Plan des Laufs erreichte
-706,07; der höchste Self-Play-Mittelwert lag bei 665,78.
+historischen Vergleichsmarken liegen bei einem Simulationsscore Gesamtscore von 630,54 (größer ist besser) und einem
+Rang Mittelwert von 14,57 (kleiner ist besser). Der beste einzelne Plan im Training erreichte einen Gesamtscore von
+706,07; der höchste Self-Play-Gesamtscore-Mittelwert lag bei 665,78.
 
 Gegen Ende blieb das Self-Play mit 655,05 Punkten stark, während die feste
 Evaluation auf 609,74 Punkte beziehungsweise Rang 11,62 zurückging. Der Loss
@@ -575,7 +575,7 @@ ist ein Wert von 0.
 | P6 | 280 | 329,77 | 0,2098 | 1,0421 | 9,2057 | −0,0602 |
 
 Zur Einordnung der Fehlergrößen beginnt die aggregierte Zielkennzahl im
-gemeinsamen Ausgangszustand bei **288,78 Punkten**; der höchste im Projekt
+gemeinsamen Ausgangszustand in P0 bei **288,78 Punkten**; der höchste im Projekt
 beobachtete Wert beträgt **706,14 Punkte**. Der mittlere Referenzscore der 1.680
 Validierungsfälle liegt bei **311,67 Punkten**. Bezogen auf diesen Mittelwert
 entsprechen der Gesamt-MAE von 0,1481 rund **0,05 %** und der RMSE von 0,7760
@@ -606,23 +606,11 @@ Python-Logik nahezu numerisch:
 
 ![Laufzeitverteilung von Python und C++](src/analyse_simulator_laufzeit.png)
 
-### Bedeutung der C++-Portierung für Reinforcement Learning
+## Bedeutung der C++-Portierung für Reinforcement Learning
 
-Die C++-Portierung ist für das Reinforcement Learning entscheidend, weil
-Self-Play und Planung sehr viele vollständige Simulationsläufe benötigen. Die
-Python-/PyTorch-Seite erzeugt mit Policy-Netz und Suche die zu prüfenden
-Entscheidungen und übergibt sie gebündelt über `pybind11` an den nativen
-C++-Simulator. Dieser bildet das **Environment**, berechnet die chronologischen
-Zustandsübergänge und gibt die Ergebnisse zur Bewertung und zum weiteren
-Training an Python zurück.
+Die C++-Portierung ist für das Reinforcement Learning entscheidend, weil Self-Play und Planung sehr viele vollständige Simulationsläufe benötigen. Die Python-/PyTorch-Seite steuert über das neuronale Netz und die Suche die Entscheidungsfindung und übergibt die gewählten Aktionen gebündelt über pybind11 an den nativen C++-Simulator. Dieser bildet das **Environment**, berechnet die chronologischen Zustandsübergänge und gibt die resultierenden Folgezustände zur weiteren Bewertung und zum Training an Python zurück.
 
-Im Self-Play wählt die Policy Entscheidungen; das Environment erzeugt daraus
-Zustände und vollständige Spielverläufe. Deren abschließende Bewertung
-gegenüber einer festen historischen Vergleichspopulation liefert das
-tatsächliche Lernsignal für die Value-Heads. Mit einer verbesserten Policy
-entstehen stärkere Suchkandidaten; eine genauere Value-Schätzung verbessert
-wiederum deren Auswahl. Die dabei erzeugten Self-Play-Daten fließen zurück in
-das Training, sodass sich Policy und Value iterativ gegenseitig verstärken.
+Im Self Play wählt die Suche, geleitet durch die Policy, verschiedene Pfade im Spielbaum aus und erzeugt basierend auf der Besuchshäufigkeit der Suchknoten eine Zugwahrscheinlichkeitsverteilung. Diese ist deutlich fundierter als die anfänglich rohe Netzwerkausgabe. Die durch die Suche verbesserte Verteilung dient als Lernsignal für den Policy Head. Das Netz lernt so, die stärkere Suchausgabe vorherzusagen. Gleichzeitig liefert das tatsächliche Endergebnis der abgeschlossenen Partie in Form von Gesamtscore oder Rang in der Ghostpopulation das Lernsignal für den Value Head. Mit einer verbesserten Policy entstehen stärkere Suchkandidaten und eine genauere Value Schätzung verbessert wiederum deren Auswahl. Die dabei erzeugten Daten aus dem Self Play fließen kontinuierlich zurück in das Training, sodass sich Policy und Value iterativ gegenseitig verstärken.
 
 Im identischen Validierungsschema sank die mittlere Rundenzeit von **165,858
 ms** in Python auf **0,128 ms** in C++ – eine Beschleunigung um rund den
@@ -647,9 +635,8 @@ gemessene Python-Trainingsdauer.
   Finanzzustände werden periodisch fortgeschrieben.
 - **Getrennte Rollen:** Studierende erhalten Analyse und Zielkonflikte, aber
   keine konkreten nächsten Entscheidungswerte.
-- **Vorsicht:** Gegenfakten sind innerhalb des rekonstruierten
-  Weltmodells kausal kontrolliert, aber kein Kausalitätsbeweis außerhalb des
-  Planspiels. Insolvenzindikatoren sind einfach Planspiel-Proxys.
+
+Hinweis: Gegenfakten sind innerhalb des rekonstruierten Weltmodells kausal kontrolliert, aber kein Kausalitätsbeweis außerhalb des Planspiels. Insolvenzindikatoren sind Planspiel Vereinfachungen.
 
 ## Sicherheit und Observability
 
@@ -658,14 +645,13 @@ weder Rolle noch Spielnummer, Unternehmen oder Adminwerte als Bodyparameter
 setzen. SQL-Zugriffe sind parametrisiert und die 20 Entscheidungsfelder werden
 gegen eine feste kanonische Liste validiert.
 
-Dienste sind durch die Firewall geschützt und nur im Subnetz erreichbar.
+Dienste sind durch die Firewall geschützt, isoliert und nur im Subnetz erreichbar.
 
 Langfuse zeichnet zwei getrennte Ebenen auf: den Open-WebUI-Chatturn und die
 direkte PlanZero-Analyse. Tiefenspans erfassen nur kuratierte technische
 Metadaten; vollständige Entscheidungen, Modelllogits, NumPy-Batches,
 E-Mail-Adressen und Summary-Volltexte werden nicht automatisch gespeichert.
-Die Spielnummer erscheint nur als SHA-256-Kurzverweis. Observability arbeitet
-fail-open und darf die fachliche Analyse nicht blockieren.
+Die Spielnummer erscheint nur als SHA-256-Kurzverweis.
 
 ## Projektstruktur
 
@@ -708,19 +694,14 @@ fail-open und darf die fachliche Analyse nicht blockieren.
   Betriebsstand.
 
 ## Laufzeit
+- Linux Ubuntu 24.04 Server Edition
+- Python 3.12 auf ARM64
+- CPU-PyTorch (CUDA-Pakete sind auf diesem Host nicht erforderlich)
 
-Die produktive Serverumgebung ist Python 3.12 auf ARM64. Linux Ubuntu 24.04 Server Edition.
-Sie verwendet bewusst CPU-PyTorch aus dem offiziellen PyTorch-CPU-Index; CUDA-Pakete sind auf diesem
-Host nicht erforderlich. Training und historische Benchmarks wurden dagegen mit
-einer CUDA GPU umgesetzt.
+## Citation
 
-## Einordnung
+Silver, D., Schrittwieser, J., Simonyan, K., et al. (2018). *A general
+reinforcement learning algorithm that masters chess, shogi, and Go through
+self-play*. Science, 362(6419), 1140–1144.
+https://doi.org/10.1126/science.aar6404
 
-PlanZero ist nicht nur eine Simulations- und RL-Forschungsplattform,
-sondern eine produktiv integrierte, rollengeschützte Analysekomponente. Der
-abgeschlossene Trainingslauf zeigt innerhalb des verwendeten Protokolls ein
-Leistungsniveau oberhalb historischer menschlicher Vergleichsmarken. Die
-Bezeichnung *superhuman* setzt darüber hinaus ein vorab definiertes,
-reproduzierbares Arena-Protokoll voraus, in dem das Modell menschliche,
-heuristische und optimierungsbasierte Baselines auf unabhängigen Seeds robust
-übertrifft.
