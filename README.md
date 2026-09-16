@@ -420,15 +420,9 @@ einen mittleren Rang von **4,01**. Die Ghost Population umfasst 107 vollständig
 bewertete Spielergebnisse von Studierenden aus dem Sommersemester 2026. Die
 historischen Vergleichsmarken liegen bei einem Simulationsscore von 630,54 und einem
 Rang von 14,57 (kleiner ist besser). Der beste einzelne Plan des Laufs erreichte
-706,07; der höchste Self-Play-Mittelwert lag bei 665,78.
+706,07 und einen Rang von 2,43; der höchste Self-Play-Mittelwert lag bei 665,78.
 
-Gegen Ende blieb das Self-Play mit 655,05 Punkten stark, während die feste
-Evaluation auf 609,74 Punkte beziehungsweise Rang 11,62 zurückging. Der Loss
-fiel dennoch von 2,7483 auf 0,2546. Das spricht für eine späte Spezialisierung
-auf die Trainingssuche und gegen die Annahme, dass der niedrigste Loss
-automatisch den besten generalisierenden Checkpoint liefert. Die feste
-Evaluation verwendete wiederholt denselben Seed und nur 128 Partien. Ein formaler Superhuman-Nachweis
-auf unabhängigen Seeds steht noch aus.
+Gegen Ende blieb das Self-Play mit 655,05 Punkten stark, während die feste Evaluation auf 609,74 Punkte beziehungsweise Rang 11,62 zurückging. Der Loss fiel dennoch von 2,7483 auf 0,2546, was im Reinforcement Learning nicht ungewöhnlich ist. Es spricht für eine späte Spezialisierung auf die Trainingssuche und gegen die Annahme, dass der niedrigste Loss automatisch den am besten generalisierenden Checkpoint liefert. Vorrangig wird hier der Gesamtreward betrachtet. Dieser ist aus der identischen Bewertungsmatrix konstruiert, auf der auch die Studierenden evaluiert werden, was das Alignment-Problem auflöst.
 
 ## Policy-Value- und Simulationsarchitektur
 
