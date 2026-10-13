@@ -31,7 +31,7 @@ aber keine Quelle für benutzerbezogene Spielstände oder PlanZero-Berechnungen.
 
 | Komponente | Stand |
 |---|---|
-| Rekonstruktion der Planspiellogik | implementiert und historisch validiert |
+| Rekonstruktion des Environments | implementiert und historisch validiert |
 | Paralleler C++17-Simulator über `pybind11` | implementiert und produktiv auf ARM64 gebaut |
 | Faktorisiertes Policy-Netz mit zwei Value-Heads | trainiert; Endcheckpoint produktiv geladen |
 | Bedingte Rollouts, Sensitivitäten und Gegenfakten | implementiert |
@@ -698,4 +698,7 @@ Silver, D., Schrittwieser, J., Simonyan, K., et al. (2018). *A general
 reinforcement learning algorithm that masters chess, shogi, and Go through
 self-play*. Science, 362(6419), 1140–1144.
 https://doi.org/10.1126/science.aar6404
+
+AlphaGo - Full award-winning documentary
+https://www.youtube.com/watch?v=WXuK6gekU1Y
 
