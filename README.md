@@ -7,7 +7,6 @@
 > erklärbarer KI verbinden, ohne die Eigenständigkeit studentischer
 > Entscheidungen aufzuheben? (gelöst) Wie interagieren Studenten mit einer Superhuman-KI? Wie verändern sich die Noten? Wie robust ist das System gegen irrationale menschliche Entscheidungen?
 
-
 PlanZero verbindet ein explizites, reportfreies Weltmodell mit einem trainierten
 Policy-Value-Netz, einem nativen C++17-Simulator und einer produktiven
 OpenAPI-Schnittstelle. Der Dienst rekonstruiert die freigegebene Vergangenheit,
@@ -16,6 +15,11 @@ Gegenfakten und formuliert daraus serverseitig eine verständliche
 BWL-Gesamtanalyse.
 
 ![PlanZero_UI_](src/PlanZero_UI.png)
+
+>**Forschungsfrage:** Vertrauen Studierende, die den Agenten intensiv nutzen, den Analysen blind, oder verbessert die Erklärbarkeit (XAI) ihr eigenes strategisches Verständnis?
+>Gibt es eine Korrelation zwischen der Länge/Tiefe der Chat-Fragen (z. B. tiefgehende Warum-Fragen vs. kurze Kontrollfragen) und dem Schlussrang im Planspiel?
+>Wie verändert sich das Interaktionsverhalten von Periode 1 bis Periode 6? Werden die Fragen abstrakter/komplexer, weil die Studierenden das Spiel durch die KI besser verstehen?
+>Hilft der DRL-Agent schwächeren Studierenden überproportional stark (Closing the Gap), oder profitieren vor allem die ohnehin starken Studierenden (Matthäus-Effekt)?
 
 Die studentische Oberfläche läuft in Open WebUI. Identität, Rolle, Spielnummer,
 Unternehmen und aktive Periode werden außerhalb des Sprachmodells bestimmt.
