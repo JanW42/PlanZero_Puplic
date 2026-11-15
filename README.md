@@ -1,16 +1,8 @@
 # PlanZero
 
-**verteiltes Actor Critic Deep Reinforment Learning System auf sechsperiodiger Business-Simulationen (bestärkendes Lernen)**
+**verteiltes Actor Critic Deep Reinforment Learning System in sechsperiodiger Business-Simulationen (bestärkendes Lernen)**
 
-PlanZero bewältigt einen kombinatorischen Entscheidungsraum mit theoretisch etwa 
-$$
-C_{\mathrm{Basis}}
-=
-\prod_{t=1}^{6}b_t^{\mathrm{Basis}}
-\approx
-{4{,}679808\times10^{151}}.
-$$
-möglichen Aktionsfolgen in seinen sechs Perioden – rund 29 Größenordnungen mehr als die geschätzte Spielbaumkomplexität von Schach.
+PlanZero bewältigt einen kombinatorischen Entscheidungsraum mit theoretisch etwa **4,68 × 10¹⁵¹ möglichen Aktionsfolgen** in seinen sechs Perioden – rund 29 Größenordnungen mehr als die geschätzte Spielbaumkomplexität von Schach.
 
 > **Forschungsfrage:** Wie lässt sich eine rekonstruierte, deterministische
 > Unternehmenssimulation mit AlphaZero-artiger Policy-Value-Planung und
@@ -585,26 +577,25 @@ $$
 
 ## 4. Anzahl vollständiger Aktionsfolgen
 
-$$
-C_{\mathrm{Basis}}
-=
-\prod_{t=1}^{6}b_t^{\mathrm{Basis}}
-\approx
-{4{,}679808\times10^{151}}.
-$$
+Die Anzahl vollständiger Aktionsfolgen ergibt sich als Produkt der sechs
+periodenabhängigen Basisaktionsräume:
+
+```math
+C_{\mathrm{Basis}} = \prod_{t=1}^{6} b_t^{\mathrm{Basis}} \approx 4{,}679808 \times 10^{151}
+```
 
 ## 5. Vergleich mit Schach und Go
 
-Für Schach und Go nennt der begutachtete Übersichtsartikel von **van den Herik, Uiterwijk und van Rijswijck (2002), Tabelle 2**, geschätzte Spielbaumkomplexitäten von $10^{123}$ beziehungsweise $10^{360}$ [1]. Diese Literaturwerte sind grobe Abschätzungen und keine exakten Anzahlen sämtlicher legaler Partien.
+Für Schach und Go nennt der begutachtete Übersichtsartikel von **van den Herik, Uiterwijk und van Rijswijck (2002), Tabelle 2**, geschätzte Spielbaumkomplexitäten von 10¹²³ beziehungsweise 10³⁶⁰ [1]. Diese Literaturwerte sind grobe Abschätzungen und keine exakten Anzahlen sämtlicher legaler Partien.
 
 | Beispiel | Angenommene Verzweigung | Angenommene Tiefe | Eigene Modellrechnung | Literaturabschätzung [1] |
 |---|---:|---:|---:|---:|
-| Schach | 35 | 80 Halbzüge | $35^{80}\approx3{,}35\times10^{123}$ | $10^{123}$ |
-| PlanZero, periodenabhängige Basisraster | unterschiedlich | 6 Perioden | $\prod_{t=1}^{6}b_t^{\mathrm{Basis}}\approx4{,}68\times10^{151}$ | – |
-| PlanZero, konstantes P5-Basisraster | $4{,}09\times10^{30}$ | 6 Perioden | $(b_{\mathrm{P5}}^{\mathrm{Basis}})^6\approx4{,}69\times10^{183}$ | – |
-| Go (19 × 19) | 250 | 150 einzelne Züge | $250^{150}\approx4{,}91\times10^{359}$ | $10^{360}$ |
+| Schach | 35 | 80 Halbzüge | 35⁸⁰ ≈ 3,35 × 10¹²³ | 10¹²³ |
+| PlanZero, periodenabhängige Basisraster | unterschiedlich | 6 Perioden | Produkt der sechs Basisaktionsräume ≈ 4,68 × 10¹⁵¹ | – |
+| PlanZero, konstantes P5-Basisraster | 4,09 × 10³⁰ | 6 Perioden | (P5-Basisaktionsraum)⁶ ≈ 4,69 × 10¹⁸³ | – |
+| Go (19 × 19) | 250 | 150 einzelne Züge | 250¹⁵⁰ ≈ 4,91 × 10³⁵⁹ | 10³⁶⁰ |
 
-Die Annahmen $b\approx35$, $d\approx80$ für Schach und $b\approx250$, $d\approx150$ für Go werden auch im begutachteten Nature-Artikel von **Silver et al. (2016)** verwendet [2]. Die Spalte „Eigene Modellrechnung“ zeigt die daraus berechneten Werte; die Literaturabschätzungen stammen aus [1]. 
+Die Annahmen b ≈ 35 und d ≈ 80 für Schach sowie b ≈ 250 und d ≈ 150 für Go werden auch im begutachteten Nature-Artikel von **Silver et al. (2016)** verwendet [2]. Die Spalte „Eigene Modellrechnung“ zeigt die daraus berechneten Werte; die Literaturabschätzungen stammen aus [1].
 
 Der Vergleich ist eingeschränkt: Ein Schachhalbzug oder Go-Zug ist eine einzelne Spielerentscheidung; eine PlanZero-Aktion kombiniert zahlreiche wirtschaftliche Entscheidungen.
 
