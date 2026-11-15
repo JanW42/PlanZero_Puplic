@@ -1,6 +1,16 @@
 # PlanZero
 
-**verteiltes AlphaZero-System für sechsperiodige Business-Simulationen in C++ und PyTorch (Reinforcement Learning)**
+**verteiltes Actor Critic Deep Reinforment Learning System auf sechsperiodiger Business-Simulationen (bestärkendes Lernen)**
+
+PlanZero bewältigt einen kombinatorischen Entscheidungsraum mit theoretisch etwa 
+$$
+C_{\mathrm{Basis}}
+=
+\prod_{t=1}^{6}b_t^{\mathrm{Basis}}
+\approx
+{4{,}679808\times10^{151}}.
+$$
+möglichen Aktionsfolgen in seinen sechs Perioden – rund 29 Größenordnungen mehr als die geschätzte Spielbaumkomplexität von Schach.
 
 > **Forschungsfrage:** Wie lässt sich eine rekonstruierte, deterministische
 > Unternehmenssimulation mit AlphaZero-artiger Policy-Value-Planung und
@@ -44,6 +54,7 @@ aber keine Quelle für benutzerbezogene Spielstände oder PlanZero-Berechnungen.
 | Open-WebUI-Toolserver mit Rollenprüfung | produktiv integriert |
 | Open-WebUI-RAG-Retrieval | evaluiert; `BAAI/bge-m3`, Dense Retrieval und Top-8 ausgewählt |
 | Serverseitige, nicht präskriptive BWL-Summary | implementiert |
+| Persistente Override-Wartezeiten und Periodenbudget | implementiert; zehn Erfolge pro Nutzer und Periode |
 | Datensparsame Langfuse-Instrumentierung | implementiert, fail-open |
 | Automatischer Crawler | Datenvertrag definiert, noch separat umzusetzen |
 | Unabhängiger Superhuman-Arena-Nachweis | noch ausstehend |
@@ -209,7 +220,9 @@ Die Beschreibung des OpenAPI-Tools weist das Sprachmodell an, PlanZero pro
 zusammenhängendem Analysezustand **genau einmal** aufzurufen. Folgefragen werden
 aus der bereits im Chat vorhandenen Gesamtsummary beantwortet. Das ist eine
 Modellinstruktion, kein serverseitiger Chat-Lock: Ein technisch erneut
-gesendeter gültiger Request würde erneut berechnet.
+gesendeter gültiger Request würde erneut berechnet, sofern die zusätzliche
+serverseitige Override-Begrenzung ihn zulässt. Diese Grenze gilt unabhängig von
+der Modellinstruktion und wird im folgenden Abschnitt beschrieben.
 
 ## Beispiel: Nutzeranfrage in der aktiven Periode 3
 
@@ -332,54 +345,78 @@ Crawlerdaten oder einem Periodenwechsel zuverlässig invalidiert.
 
 ## Analyseumfang und Rollenmodell
 
-Das Tool kennt acht Fragekategorien, welche als vorgeschlagene Prompts in OpenWebUI hinterlegt sind:
+PlanZero unterstützt folgende Analysebereiche:
 
 1. Vergangenheitsanalyse
-2. Bedingte Zukunfts-Rollouts
+2. (Bedingte Zukunfts-Rollouts) – Ausgabe derzeit deaktiviert
 3. Lokale Sensitivitätsanalyse
 4. Gepaarte Gegenfaktual- und Entscheidungsanalyse
 5. Historischer Vergleich mit der Ghost-Population
 6. Policy-Übereinstimmung und ungewöhnliche Entscheidungen
 7. Szenarioanteile und finanzielle Frühwarnung
-8. Konkrete beste nächste Entscheidungen
+8. Konkrete nächste Modellentscheidungen – ausschließlich für Admins
 
-Eine Frage aus 1 bis 7 dient als Auslöser und Berechtigungsschlüssel, reduziert
-aber nicht die Berechnung. Normale Nutzer erhalten immer die gemeinsame,
-nicht präskriptive Summary aller sieben Bereiche. Nur die für Admins
-freigegebene Frage 8 setzt serverseitig `include_action_values=True` und ergänzt
-konkrete aktuelle und spätere Werte. Dieser Schalter ist kein Toolparameter und
-kann nicht durch Promptinjection aktiviert werden.
+Studierende erhalten eine betriebswirtschaftliche Zusammenfassung mit
+Erklärungen, Wirkungsrichtungen, Zielkonflikten und Warnhinweisen. Der eigene
+Abschnitt zu bedingten Zukunfts-Rollouts ist derzeit deaktiviert. Eine fertige
+Liste optimaler Eingabewerte wird Studierenden nicht vorgegeben.
 
-Standardmäßig berechnet PlanZero in P1 bis P5 128 bedingte Fortsetzungen. In P6
-gibt es keine spätere U1-Entscheidungsperiode mehr; die Fortsetzung ist daher
-deterministisch und besteht aus einem Szenario. Der Forecast-Median über viele
-Rollouts und der einzelne Referenzverlauf sind bewusst getrennte Größen.
+Eigene Entscheidungsvorschläge können innerhalb der unten beschriebenen
+Wartezeiten und des Periodenbudgets geprüft werden. Die Ergebnisse unterstützen
+die eigene Abwägung; sie garantieren keine optimale Entscheidung.
 
-Das öffentliche Request-Schema enthält nur:
+Nur die gesondert freigegebene Adminfrage stellt konkrete aktuelle und spätere
+Modellentscheidungen bereit. Benutzerrolle, Spielzuordnung und aktuelle Periode
+werden serverseitig bestimmt.
 
-```text
-frage, periode, entscheidung, simulationen, temperatur, seed
-```
+## Eigene Entscheidungsvarianten: Wartezeiten und Periodenbudget
 
-Im Normalfall wird ausschließlich `frage` gesetzt. Die anderen Felder sind
-optionale Bestätigungen oder technische Overrides. Identität, Rolle,
-Spielnummer, Unternehmen und `include_action_values` sind im Body weder sichtbar
-noch setzbar.
+Studierende können eigene aktuelle Entscheidungen als Overrides prüfen lassen.
+Damit wiederholte Abfragen nicht zur unbegrenzten automatisierten Suche nach
+optimalen Eingabewerten werden, gilt ein serverseitiges
+Budget von **zehn erfolgreichen Override-Prüfungen pro Nutzer und Spielperiode**.
+Die Wartezeit beginnt jeweils nach einer erfolgreichen Prüfung:
 
-Die API-Antwort ist bewusst klein:
+| Erfolgreiche Prüfung | Wartezeit bis zur nächsten eigenen Variante |
+|---|---|
+| 1 und 2 | keine zusätzliche Wartezeit |
+| 3 | 5 Minuten |
+| 4 | 15 Minuten |
+| 5 | 30 Minuten |
+| 6 bis 9 | 3 Stunden |
+| 10 | Budget bis zur nächsten Spielperiode aufgebraucht |
 
-```text
-question
-question_title
-spielnummer
-periode
-period_status
-summary
-validation_warnings
-```
+Die Antwort nennt den bisherigen Verbrauch, das Restbudget und gegebenenfalls
+Datum und Uhrzeit der nächsten Freigabe in `Europe/Berlin`. Diese Hinweise stehen
+in `summary` und `validation_warnings`; andere Validierungswarnungen bleiben
+sichtbar. Ungültige Eingaben und fehlgeschlagene Analysen verbrauchen kein Budget.
+Abgewiesene Wiederholungen verlängern die Wartezeit nicht.
 
-Ein `context`-Feld oder das vollständige interne Analyse-JSON werden nicht an
-das Sprachmodell zurückgegeben.
+Neue Chats, Abmelden, Neustarts sowie andere Fragekategorien oder technische
+Parameter setzen die Grenzen nicht zurück. Eine neue serverseitige Spielperiode
+beginnt mit einem neuen Budget. Es gibt keine Adminausnahme. **Analysen ohne eigene
+Entscheidungs-Overrides und Verständnisfragen bleiben verfügbar.**
+
+Der Server antwortet bei einer vorübergehenden Wartezeit mit HTTP `429` und
+`override_cooldown`, bei einer bereits laufenden Prüfung mit `override_in_progress`
+und bei aufgebrauchtem Budget gesondert mit `override_budget_exhausted`. Die
+Fehlermeldung erklärt den Grund und die weiteren Möglichkeiten. Bei Wartezeit
+oder laufender Prüfung wird zusätzlich `Retry-After` geliefert. Das Sprachmodell
+soll blockierte Aufrufe nicht automatisch wiederholen.
+
+Die Speicherung erfolgt pro stabiler Nutzer-ID und serverseitigem Periodenbeginn
+in der separaten SQLite-Datei `data/override_limits.sqlite3`. Atomare Reservierungen
+verhindern parallele Override-Berechnungen desselben Nutzers in derselben Periode.
+Ein bereits erfolgreich abgeschlossener Aufruf bleibt auch bei anschließendem
+Verbindungsabbruch gezählt. Die Grenze gilt pro Konto; sie verhindert keinen
+Ergebnisaustausch zwischen verschiedenen Personen.
+
+Die Umsetzung wurde mit **14 isolierten Tests und zwei Starttests** geprüft.
+Zusätzlich bestätigte ein ausdrücklich gestarteter synthetischer Langfuse-Test
+mit temporärer Datenbank und simulierter Engine die Erfassung von Wartezeit,
+Budgetende und weiterhin verfügbaren normalen Analysen. Dabei wurden keine
+studentischen Budgets verwendet. Dieser Nachweis ersetzt keinen vollständigen
+Modell-/Simulator- oder Browser-End-to-End-Test.
 
 ## Periodensteuerung
 
@@ -392,8 +429,8 @@ Periode exakt um 10:00 Uhr in `Europe/Berlin`.
 |---:|---|---|
 | P1 | 02.11.2026, 10:00 | 16.11.2026, 10:00 |
 | P2 | 16.11.2026, 10:00 | 30.11.2026, 10:00 |
-| P3 | 30.11.2026, 10:00 | 14.11.2026, 10:00 |
-| P4 | 14.11.2026, 10:00 | 04.01.2027, 10:00 |
+| P3 | 30.11.2026, 10:00 | 14.12.2026, 10:00 |
+| P4 | 14.12.2026, 10:00 | 04.01.2027, 10:00 |
 | P5 | 04.01.2027, 10:00 | 11.01.2027, 10:00 |
 | P6 | 11.01.2027, 10:00 | 18.01.2027, 10:00 |
 
@@ -476,6 +513,100 @@ Produktion, Einsatzstoffe, Personal, Investitionen, Finanzierung, Lager,
 Liquidität und Bilanz. Ein Lauf umfasst chronologisch Marktreaktionen,
 Lieferfähigkeit, Nachfrageumverteilung, betriebliche Abrechnung, Finanzierung
 und die Bildung aggregierter Zielkennzahlen.
+
+
+# MDP- und Spielbaumkomplexität
+
+## 1. Markov Decision Process (MDP)
+
+Ein MDP lässt sich durch das Tupel
+
+$$
+\mathrm{MDP}=(S,A,P,R)
+$$
+
+beschreiben. Dabei stehen $S$ für den Zustandsraum, $A$ für den Aktionsraum, $P$ für die Übergangswahrscheinlichkeiten und $R$ für die Belohnungsfunktion. Bei einem endlichen Planungshorizont werden zusätzlich der Horizont $H$ und gegebenenfalls eine Anfangszustandsverteilung angegeben. Ein Diskontierungsfaktor $\gamma$ kann ebenfalls Bestandteil der Definition sein.
+
+Für PlanZero beträgt der vollständige Horizont sechs Entscheidungsperioden. Damit die Markov-Eigenschaft erfüllt ist, muss der Zustand alle Informationen enthalten, die den nächsten Übergang und die Bewertung beeinflussen. Dazu gehören insbesondere die aktuelle Periode und die relevanten internen Simulatorgrößen. Eine Auswahl sichtbarer betriebswirtschaftlicher Kennzahlen allein ist nicht automatisch ein vollständiger Markov-Zustand.
+
+Bei festgelegten Gegnerentscheidungen und einer vollständig bestimmten Simulatorkonfiguration ist der Übergang deterministisch:
+
+$$
+s_{t+1}=f_t(s_t,a_t),
+\qquad
+P_t(s'\mid s,a)=
+\begin{cases}
+1,&s'=f_t(s,a),\\
+0,&\text{sonst}.
+\end{cases}
+$$
+
+Diese MDP-Betrachtung gilt für das **PlanZero-Weltmodell mit festem Gegnerszenario**. Würden die Gegner selbst strategisch auf eigene Entscheidungen reagieren, läge ein Mehragenten Szenario vor.
+
+## 2. Kombinatorischer Aktionsraum pro Periode
+
+Für unabhängig kombinierbare diskrete Entscheidungsfelder ergibt sich der kartesische Produktraum als
+
+$$
+b_t^{\mathrm{Raster}}=\prod_{i=1}^{n}|G_{i,t}|,
+$$
+
+wobei $G_{i,t}$ die Wertemenge des Feldes $i$ in Periode $t$ bezeichnet.
+
+Für ein regelmäßiges Raster gilt:
+
+$$
+|G_i|=
+\left\lfloor
+\frac{\mathrm{High}_i-\mathrm{Low}_i}{\mathrm{Step}_i}
+\right\rfloor+1.
+$$
+
+Das exakte Produkt beträgt:
+
+$$
+b_{\mathrm{P5}}^{\mathrm{Basis}}
+=
+4\,091\,981\,056\,814\,276\,246\,870\,205\,530\,112
+\approx4{,}091981\times10^{30}.
+$$
+
+## 3. Periodenabhängige Verzweigung
+
+| Periode | Felder mit mehr als einem Wert | Kartesischer Basisaktionsraum |
+|---|---:|---:|
+| P1 | 8 | $1{,}449897\times10^{13}$ |
+| P2 | 12 | $1{,}500816\times10^{20}$ |
+| P3 | 16 | $9{,}531752\times10^{26}$ |
+| P4 | 18 | $1{,}930180\times10^{30}$ |
+| P5 | 18 | $4{,}091981\times10^{30}$ |
+| P6 | 18 | $2{,}856666\times10^{30}$ |
+
+
+## 4. Anzahl vollständiger Aktionsfolgen
+
+$$
+C_{\mathrm{Basis}}
+=
+\prod_{t=1}^{6}b_t^{\mathrm{Basis}}
+\approx
+{4{,}679808\times10^{151}}.
+$$
+
+## 5. Vergleich mit Schach und Go
+
+Für Schach und Go nennt der begutachtete Übersichtsartikel von **van den Herik, Uiterwijk und van Rijswijck (2002), Tabelle 2**, geschätzte Spielbaumkomplexitäten von $10^{123}$ beziehungsweise $10^{360}$ [1]. Diese Literaturwerte sind grobe Abschätzungen und keine exakten Anzahlen sämtlicher legaler Partien.
+
+| Beispiel | Angenommene Verzweigung | Angenommene Tiefe | Eigene Modellrechnung | Literaturabschätzung [1] |
+|---|---:|---:|---:|---:|
+| Schach | 35 | 80 Halbzüge | $35^{80}\approx3{,}35\times10^{123}$ | $10^{123}$ |
+| PlanZero, periodenabhängige Basisraster | unterschiedlich | 6 Perioden | $\prod_{t=1}^{6}b_t^{\mathrm{Basis}}\approx4{,}68\times10^{151}$ | – |
+| PlanZero, konstantes P5-Basisraster | $4{,}09\times10^{30}$ | 6 Perioden | $(b_{\mathrm{P5}}^{\mathrm{Basis}})^6\approx4{,}69\times10^{183}$ | – |
+| Go (19 × 19) | 250 | 150 einzelne Züge | $250^{150}\approx4{,}91\times10^{359}$ | $10^{360}$ |
+
+Die Annahmen $b\approx35$, $d\approx80$ für Schach und $b\approx250$, $d\approx150$ für Go werden auch im begutachteten Nature-Artikel von **Silver et al. (2016)** verwendet [2]. Die Spalte „Eigene Modellrechnung“ zeigt die daraus berechneten Werte; die Literaturabschätzungen stammen aus [1]. 
+
+Der Vergleich ist eingeschränkt: Ein Schachhalbzug oder Go-Zug ist eine einzelne Spielerentscheidung; eine PlanZero-Aktion kombiniert zahlreiche wirtschaftliche Entscheidungen.
 
 ## Ghost Population und Reward
 
@@ -649,7 +780,11 @@ Langfuse zeichnet zwei getrennte Ebenen auf: den Open-WebUI-Chatturn und die
 direkte PlanZero-Analyse. Tiefenspans erfassen nur kuratierte technische
 Metadaten; vollständige Entscheidungen, Modelllogits, NumPy-Batches,
 E-Mail-Adressen und Summary-Volltexte werden nicht automatisch gespeichert.
-Die Spielnummer erscheint nur als SHA-256-Kurzverweis.
+Die Spielnummer erscheint nur als SHA-256-Kurzverweis. Die zusätzlichen Schritte
+`planzero.override.admission` und `planzero.override.complete` erfassen Verbrauch,
+Restbudget und Wartezeit. Erwartete Override-Sperren erscheinen als `WARNING`,
+auch am API-Root; konkrete Entscheidungswerte werden in diesen Schritten nicht
+gespeichert.
 
 ## Projektstruktur
 
@@ -668,11 +803,16 @@ Die Spielnummer erscheint nur als SHA-256-Kurzverweis.
 ├── planzero_observability.py
 ├── planzero_database.py
 ├── planzero_database_cli.py
+├── planzero_override_limits.py
 ├── data/
-│   └── planzero.sqlite3
+│   ├── planzero.sqlite3
+│   └── override_limits.sqlite3
 ├── settings.py
 ├── requirements.txt
 ├── test_planzero_service.py
+├── test_planzero_override_limits.py
+├── test_planzero_startup.py
+├── check_override_limit_tracing.py
 ├── Architektur.txt
 ├── README.md
 ```
@@ -687,7 +827,9 @@ Die Spielnummer erscheint nur als SHA-256-Kurzverweis.
   No-op-Fallback.
 - `planzero_database.py`: SQLite-Schema, Validatoren, sichere Upserts und
   periodenabhängiger `SQLDecisionStore`.
-- `settings.py`: sechs Periodenfenster und Rollenrechte für acht Fragen.
+- `planzero_override_limits.py`: persistentes Override-Budget, Wartezeiten und
+  atomare Reservierungen; keine Änderung fachlicher Spielentscheidungen.
+- `settings.py`: sechs Periodenfenster, Rollenrechte und Override-Grenzen.
 - `Architektur.txt`: vollständiger Datenbank-, Crawler-, Sicherheits- und
   Betriebsstand.
 
@@ -697,6 +839,9 @@ Die Spielnummer erscheint nur als SHA-256-Kurzverweis.
 - CPU-PyTorch (CUDA-Pakete sind auf diesem Host nicht erforderlich)
 
 ## Citation
+
+1. van den Herik, H. J., Uiterwijk, J. W. H. M., & van Rijswijck, J. (2002). *Games solved: Now and in the future*. Artificial Intelligence, 134(1–2), 277–311. **Tabelle 2: Spielbaumkomplexität von Schach und Go.** [https://doi.org/10.1016/S0004-3702(01)00152-7](https://doi.org/10.1016/S0004-3702(01)00152-7). Der [Publikationseintrag der Universität Maastricht](https://cris.maastrichtuniversity.nl/en/publications/games-solved-now-and-in-the-future/).
+2. Silver, D., et al. (2016). *Mastering the game of Go with deep neural networks and tree search*. Nature, 529, 484–489. **Einleitung: angenommene Verzweigung und Tiefe für Schach und Go.** [https://doi.org/10.1038/nature16961](https://doi.org/10.1038/nature16961).
 
 Silver, D., Schrittwieser, J., Simonyan, K., et al. (2018). *A general
 reinforcement learning algorithm that masters chess, shogi, and Go through
