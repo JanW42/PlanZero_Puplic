@@ -556,12 +556,9 @@ $$
 
 Das exakte Produkt beträgt:
 
-$$
-b_{\mathrm{P5}}^{\mathrm{Basis}}
-=
-4\,091\,981\,056\,814\,276\,246\,870\,205\,530\,112
-\approx4{,}091981\times10^{30}.
-$$
+```math
+b_{\mathrm{P5}}^{\mathrm{Basis}} = 4\,091\,981\,056\,814\,276\,246\,870\,205\,530\,112 \approx 4{,}091981 \times 10^{30}
+```
 
 ## 3. Periodenabhängige Verzweigung
 
@@ -595,7 +592,7 @@ Für Schach und Go nennt der begutachtete Übersichtsartikel von **van den Herik
 | PlanZero, konstantes P5-Basisraster | 4,09 × 10³⁰ | 6 Perioden | (P5-Basisaktionsraum)⁶ ≈ 4,69 × 10¹⁸³ | – |
 | Go (19 × 19) | 250 | 150 einzelne Züge | 250¹⁵⁰ ≈ 4,91 × 10³⁵⁹ | 10³⁶⁰ |
 
-Die Annahmen b ≈ 35 und d ≈ 80 für Schach sowie b ≈ 250 und d ≈ 150 für Go werden auch im begutachteten Nature-Artikel von **Silver et al. (2016)** verwendet [2]. Die Spalte „Eigene Modellrechnung“ zeigt die daraus berechneten Werte; die Literaturabschätzungen stammen aus [1].
+Die Annahmen b ≈ 35 und d ≈ 80 für Schach sowie b ≈ 250 und d ≈ 150 für Go werden auch im begutachteten Nature-Artikel von Silver et al. (2016) verwendet [2]. Die Spalte „Eigene Modellrechnung“ zeigt die daraus berechneten Werte; die Literaturabschätzungen stammen aus [1].
 
 Der Vergleich ist eingeschränkt: Ein Schachhalbzug oder Go-Zug ist eine einzelne Spielerentscheidung; eine PlanZero-Aktion kombiniert zahlreiche wirtschaftliche Entscheidungen.
 
