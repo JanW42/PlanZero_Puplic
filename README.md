@@ -2,7 +2,7 @@
 
 **verteiltes Actor Critic Deep Reinforment Learning System in sechsperiodiger Business-Simulationen (bestärkendes Lernen)**
 
-PlanZero bewältigt einen kombinatorischen Entscheidungsraum mit theoretisch etwa **4,68 × 10¹⁵¹ möglichen Aktionsfolgen** in seinen sechs Perioden – rund 29 Größenordnungen mehr als die geschätzte Spielbaumkomplexität von Schach.
+PlanZero bewältigt einen kombinatorischen Entscheidungsraum mit theoretisch etwa 4,68 × 10¹⁵¹ möglichen Aktionsfolgen in seinen sechs Perioden – das sind rund 29 Größenordnungen mehr als die geschätzte Spielbaumkomplexität von Schach und etwa 71 Größenordnungen mehr als die geschätzte Anzahl aller Atome im beobachtbaren Universum (ca. 10⁸⁰).
 
 > **Forschungsfrage:** Wie lässt sich eine rekonstruierte, deterministische
 > Unternehmenssimulation mit AlphaZero-artiger Policy-Value-Planung und
